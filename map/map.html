@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+<link rel="icon" href="icons/faviconm.png" type="image/x-icon">
+
+<title>Meghan Kradolfer - Map</title>
+
+<!--Set up the CSS styles-->
+<style type="text/css">
+      html { 
+	      height: 100%;
+	  }
+      
+	  body {
+		  height: 100%; 
+		  margin: 0; 
+		  padding: 0;
+		  background-image: url('background9.jpg');
+		  background-color: #B3CDE6;
+		  background-repeat: no-repeat;
+		  background-attachment: fixed;
+		  background-position: right bottom; 
+	      background-size: cover;
+	  }
+      
+	  /*Adapt the following styling depending on where you want to put your map. If you want a 'full screen' map, then set the width and height to 100 percent and remove the margins.*/
+	  #festival-map { 
+	  	  height: 100%;
+		  width: 100%; 
+	  }
+	  
+	  .pop_up_box_text {
+	 	  font-family: Georgia, 'Times New Roman', Times, serif; 
+		  font-size: 16px; 
+		  line-height: 22px; 
+		  color: #ffffff; 
+		  display: inline; 
+	  }
+
+</style>
+
+
+
+<!--Connect to the google maps api using your api key-->
+<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBonpgb0ZEsos9C8vl0ZxlwnsCWr92gcXM&sensor=true"></script>
+
+<!--Connect to the infobox javascript library. This is used later to create the pop-up windows -->
+<script src="infobox/infobox.js" type="text/javascript"></script>
+
+<!--Main chunk of javascript that creates and controls the map.-->
+<script type="text/javascript">
+
+//Set up the custom styles for the map. I've created two styles so the map can switch between them depending on the zoom level. i.e. there is far less detail when the map is zoomed out.
+//First, we read in the data describing style.
+var style_festival = [
+  {
+    "featureType": "administrative",
+    "stylers": [
+      { "visibility": "off" }
+    ]
+  },{
+    "featureType": "landscape",
+    "stylers": [
+      { "color": "#cdcbc0" },
+      { "visibility": "on" }
+    ]
+  },{
+    "featureType": "poi",
+    "stylers": [
+      { "visibility": "off" }
+    ]
+  },{
+    "featureType": "road",
+    "stylers": [
+      { "visibility": "off" }
+    ]
+  },{
+    "featureType": "transit",
+    "stylers": [
+      { "visibility": "off" }
+    ]
+  },{
+    "featureType": "water",
+    "stylers": [
+      { "color": "#7a8f91" }
+    ]
+  },{
+  },{
+  }
+
+];
+
+var style_festival_zoomed = [
+  {
+    "featureType": "administrative",
+    "stylers": [
+      { "visibility": "off" }
+    ]
+  },{
+    "featureType": "landscape",
+    "stylers": [
+      { "color": "#cdcbc0" },
+      { "visibility": "on" }
+    ]
+  },{
+    "featureType": "poi",
+    "stylers": [
+      { "visibility": "off" }
+    ]
+  },{
+    "featureType": "road",
+    "stylers": [
+      { "visibility": "off" }
+    ]
+  },{
+    "featureType": "transit",
+    "stylers": [
+      { "visibility": "off" }
+    ]
+  },{
+    "featureType": "water",
+    "stylers": [
+      { "color": "#7a8f91" }
+    ]
+  },{
+  },{
+  }
+];
+
+//Then we use this data to create the styles. 
+var styled_festival = new google.maps.StyledMapType(style_festival, {name: "Festival style"});
+var styled_festival_zoomed = new google.maps.StyledMapType(style_festival_zoomed, {name: "Festival style zoomed"});
+
+//Create the variables that will be used within the map configuration options.
+//The latitude and longitude of the center of the map.
+var festivalMapCenter = new google.maps.LatLng(41.397932, -75.180368);
+//The degree to which the map is zoomed in. This can range from 0 (least zoomed) to 21 and above (most zoomed).
+var festivalMapZoom = 4;
+//The max and min zoom levels that are allowed.
+var festivalMapZoomMax = 12;
+var festivalMapZoomMin = 2;
+
+//These options configure the setup of the map. 
+var festivalMapOptions = { 
+		  center: festivalMapCenter, 
+          zoom: festivalMapZoom,
+		  maxZoom:festivalMapZoomMax,
+		  minZoom:festivalMapZoomMin,
+		  panControl: false,
+		  mapTypeControl: false,
+		   mapTypeControlOptions: {
+     		mapTypeIds: [ 'map_styles_festival', 'map_styles_festival_zoomed']
+   		 }
+};
+
+//Create the variable for the main map itself.
+var festivalMap;
+
+//Create control panel (ie. site title and 2 buttons) which appears on the right-hand side.
+var controlPanelDiv = document.createElement('div');
+var festivalMapControlPanel = new createControlPanel(controlPanelDiv, festivalMap);
+
+//Variable containing the style for the pop-up infobox.
+var pop_up_info = "border: 0px solid black; background-color: #ffffff; padding:15px; margin-top: 8px; border-radius:10px; -moz-border-radius: 10px; -webkit-border-radius: 10px; box-shadow: 1px 1px #888;";
+
+
+//When the page loads, the line below calls the function below called 'loadFestivalMap' to load up the map.
+google.maps.event.addDomListener(window, 'load', loadFestivalMap);
+
+
+//THE MAIN FUNCTION THAT IS CALLED WHEN THE WEB PAGE LOADS--------------------------------------------------------------------------------
+function loadFestivalMap() {
+	
+//The empty map variable ('festivalMap') was created above. The line below creates the map, assigning it to this variable. The line below also loads the map into the div with the id 'festival-map' (see code within the 'body' tags below), and applies the 'festivalMapOptions' (above) to configure this map. 
+festivalMap = new google.maps.Map(document.getElementById("festival-map"), festivalMapOptions);	
+
+//Assigning the two map styles defined above to the map.
+festivalMap.mapTypes.set('map_styles_festival', styled_festival);
+festivalMap.mapTypes.set('map_styles_festival_zoomed', styled_festival_zoomed);
+//Setting the one of the styles to display as default as the map loads.
+festivalMap.setMapTypeId('map_styles_festival');
+
+
+//Continuously listens out for when the zoom level changes. This includs when the map zooms when a marker is clicked.
+google.maps.event.addListener(festivalMap, "zoom_changed", function() {
+	var newZoom = festivalMap.getZoom();
+	//If the map is zoomed in, the switch to the style that shows the higher level of detail.
+	if (newZoom > 6){
+		festivalMap.setMapTypeId('map_styles_festival_zoomed');
+			}
+	//Otherwise the map must be zoomed out, so use the style with the lower level of detail.
+	else {
+		festivalMap.setMapTypeId('map_styles_festival');
+	}
+
+});
+
+//Add the control panel and reset button (created previously) to the map.
+festivalMap.controls[google.maps.ControlPosition.RIGHT_TOP].push(controlPanelDiv);
+
+//Calls the function below to load up all the map markers and pop-up boxes.
+loadMapMarkers();
+
+}
+
+
+
+//Function that loads the map markers and the pop-up info boxes.
+function loadMapMarkers (){
+
+//CAMP -----------------
+
+//Setting the position of the Glastonbury map marker.
+var markerPositionCamp = new google.maps.LatLng(41.397932, -75.180368);
+
+//Setting the icon to be used with the Glastonbury map marker.
+var markerIconCamp = {
+  url: 'icons/icon_camp.png',
+  //The size image file.
+  size: new google.maps.Size(100, 100),
+  //The point on the image to measure the anchor from. 0, 0 is the top left.
+  origin: new google.maps.Point(0, 0),
+  //The x y coordinates of the anchor point on the marker. e.g. If your map marker was a drawing pin then the anchor would be the tip of the pin.
+  anchor: new google.maps.Point(44, 100)
+};
+
+//Setting the shape to be used with the Glastonbury map marker.
+var markerShapeCamp = {
+      coord: [43,2,68,10,83,32,78,61,52,83,43,105,34,85,13,71,2,42,13,15],
+      type: 'poly'
+};
+
+//Creating the Glastonbury map marker.
+markerCamp = new google.maps.Marker({
+      //uses the position set above.
+	  position: markerPositionCamp,
+	  //adds the marker to the map.
+      map: festivalMap,
+      title: 'Tafton',
+	  //assigns the icon image set above to the marker.
+	  icon: markerIconCamp,
+	  //assigns the icon shape set above to the marker.
+	  shape: markerShapeCamp,
+	  //sets the z-index of the map marker.
+	  zIndex:107
+});
+
+
+
+//Phily ------------
+
+var markerPositionPhily = new google.maps.LatLng(39.952335, -75.163789);
+
+var markerIconPhily = {
+  url: 'icons/icon_phily.png',
+  size: new google.maps.Size(100, 100),
+  origin: new google.maps.Point(0, 0),
+  anchor: new google.maps.Point(44, 100),
+};
+
+var markerShapePhily = {
+      coord: [18,8,208,28,200,113,162,110,190,145,128,109,6,93],
+      type: 'poly'
+};
+
+markerPhily = new google.maps.Marker({
+	  position: markerPositionPhily,
+      map: festivalMap,
+      title: 'Philidelphia',
+	  icon: markerIconPhily,
+	  shape: markerShapePhily,
+	  zIndex:108
+});
+
+//NEW YORK ------------
+
+var markerPositionNewyork = new google.maps.LatLng(40.705631, -73.978003);
+
+var markerIconNewyork = {
+  url: 'icons/icon_newyork.png',
+  size: new google.maps.Size(100, 100),
+  origin: new google.maps.Point(0, 0),
+  anchor: new google.maps.Point(44, 100),
+};
+
+var markerShapeNewyork = {
+      coord: [18,8,208,28,200,113,162,110,190,145,128,109,6,93],
+      type: 'poly'
+};
+
+markerNewyork = new google.maps.Marker({
+	  position: markerPositionNewyork,
+      map: festivalMap,
+      title: 'New York',
+	  icon: markerIconNewyork,
+	  shape: markerShapeNewyork,
+	  zIndex:109
+});
+
+//D.C ------------
+
+var markerPositionDc = new google.maps.LatLng(38.907231, -77.036464);
+
+var markerIconDc = {
+  url: 'icons/icon_dc.png',
+  size: new google.maps.Size(100, 100),
+  origin: new google.maps.Point(0, 0),
+  anchor: new google.maps.Point(44, 100),
+};
+
+var markerShapeDc = {
+      coord: [18,8,208,28,200,113,162,110,190,145,128,109,6,93],
+      type: 'poly'
+};
+
+markerDc = new google.maps.Marker({
+	  position: markerPositionDc,
+      map: festivalMap,
+      title: 'Washington D.C',
+	  icon: markerIconDc,
+	  shape: markerShapeDc,
+	  zIndex:110
+});
+
+//NASHVILLE ------------
+
+var markerPositionNashville = new google.maps.LatLng(36.166667, -86.783333);
+
+var markerIconNashville = {
+  url: 'icons/icon_nashville.png',
+  size: new google.maps.Size(100, 100),
+  origin: new google.maps.Point(0, 0),
+  anchor: new google.maps.Point(44, 100),
+};
+
+var markerShapeNashville = {
+      coord: [18,8,208,28,200,113,162,110,190,145,128,109,6,93],
+      type: 'poly'
+};
+
+markerNashville = new google.maps.Marker({
+	  position: markerPositionNashville,
+      map: festivalMap,
+      title: 'Nashville',
+	  icon: markerIconNashville,
+	  shape: markerShapeNashville,
+	  zIndex:112
+});
+
+//Lynchburg ------------
+
+var markerPositionLynchburg = new google.maps.LatLng(35.283024, -86.374021);
+
+var markerIconLynchburg = {
+  url: 'icons/icon_lynch.png',
+  size: new google.maps.Size(100, 100),
+  origin: new google.maps.Point(0, 0),
+  anchor: new google.maps.Point(44, 100),
+};
+
+var markerShapeLynchburg = {
+      coord: [18,8,208,28,200,113,162,110,190,145,128,109,6,93],
+      type: 'poly'
+};
+
+markerLynchburg = new google.maps.Marker({
+	  position: markerPositionLynchburg,
+      map: festivalMap,
+      title: 'Lynchburg',
+	  icon: markerIconLynchburg,
+	  shape: markerShapeLynchburg,
+	  zIndex:114
+});
+
+//HoneyIsland ------------
+
+var markerPositionHoneyIsland = new google.maps.LatLng(30.435742, -89.925323);
+
+var markerIconHoneyIsland = {
+  url: 'icons/icon_honey.png',
+  size: new google.maps.Size(100, 100),
+  origin: new google.maps.Point(0, 0),
+  anchor: new google.maps.Point(44, 100),
+};
+
+var markerShapeHoneyIsland = {
+      coord: [18,8,208,28,200,113,162,110,190,145,128,109,6,93],
+      type: 'poly'
+};
+
+markerHoneyIsland = new google.maps.Marker({
+	  position: markerPositionHoneyIsland,
+      map: festivalMap,
+      title: 'Honey Island Swamp',
+	  icon: markerIconHoneyIsland,
+	  shape: markerShapeHoneyIsland,
+	  zIndex:116
+});
+
+
+//NewOrleans ------------
+
+var markerPositionNewOrleans = new google.maps.LatLng(29.951066, -90.071532);
+
+var markerIconNewOrleans = {
+  url: 'icons/icon_orleans.png',
+  size: new google.maps.Size(100, 100),
+  origin: new google.maps.Point(0, 0),
+  anchor: new google.maps.Point(44, 100),
+};
+
+var markerShapeNewOrleans = {
+      coord: [18,8,208,28,200,113,162,110,190,145,128,109,6,93],
+      type: 'poly'
+};
+
+markerNewOrleans = new google.maps.Marker({
+	  position: markerPositionNewOrleans,
+      map: festivalMap,
+      title: 'New Orleans',
+	  icon: markerIconNewOrleans,
+	  shape: markerShapeNewOrleans,
+	  zIndex:118
+});
+
+//SanAntonio ------------
+
+var markerPositionSanAntonio = new google.maps.LatLng(29.424122, -98.493628);
+
+var markerIconSanAntonio = {
+  url: 'icons/icon_antonio.png',
+  size: new google.maps.Size(100, 100),
+  origin: new google.maps.Point(0, 0),
+  anchor: new google.maps.Point(44, 100),
+};
+
+var markerShapeSanAntonio = {
+      coord: [18,8,208,28,200,113,162,110,190,145,128,109,6,93],
+      type: 'poly'
+};
+
+markerSanAntonio = new google.maps.Marker({
+	  position: markerPositionSanAntonio,
+      map: festivalMap,
+      title: 'San Antonio',
+	  icon: markerIconSanAntonio,
+	  shape: markerShapeSanAntonio,
+	  zIndex:120
+});
+
+//Roswell ------------
+
+var markerPositionRoswell = new google.maps.LatLng(33.394266, -104.523024);
+
+var markerIconRoswell = {
+  url: 'icons/icon_roswell.png',
+  size: new google.maps.Size(100, 100),
+  origin: new google.maps.Point(0, 0),
+  anchor: new google.maps.Point(44, 100),
+};
+
+var markerShapeRoswell = {
+      coord: [18,8,208,28,200,113,162,110,190,145,128,109,6,93],
+      type: 'poly'
+};
+
+markerRoswell = new google.maps.Marker({
+	  position: markerPositionRoswell,
+      map: festivalMap,
+      title: 'Roswell',
+	  icon: markerIconRoswell,
+	  shape: markerShapeRoswell,
+	  zIndex:122
+});
+
+//SantaFe ------------
+
+var markerPositionSantaFe = new google.maps.LatLng(35.686975, -105.937799);
+
+var markerIconSantaFe = {
+  url: 'icons/icon_santafa.png',
+  size: new google.maps.Size(100, 100),
+  origin: new google.maps.Point(0, 0),
+  anchor: new google.maps.Point(44, 100),
+};
+
+var markerShapeSantaFe = {
+      coord: [18,8,208,28,200,113,162,110,190,145,128,109,6,93],
+      type: 'poly'
+};
+
+markerSantaFe = new google.maps.Marker({
+	  position: markerPositionSantaFe,
+      map: festivalMap,
+      title: 'Santa Fe',
+	  icon: markerIconSantaFe,
+	  shape: markerShapeSantaFe,
+	  zIndex:120
+});
+
+//Utah ------------
+
+var markerPositionUtah = new google.maps.LatLng(37.010556, -110.242778);
+
+var markerIconUtah = {
+  url: 'icons/icon_utah.png',
+  size: new google.maps.Size(100, 100),
+  origin: new google.maps.Point(0, 0),
+  anchor: new google.maps.Point(44, 100),
+};
+
+var markerShapeUtah = {
+      coord: [18,8,208,28,200,113,162,110,190,145,128,109,6,93],
+      type: 'poly'
+};
+
+markerUtah = new google.maps.Marker({
+	  position: markerPositionUtah,
+      map: festivalMap,
+      title: 'Utah',
+	  icon: markerIconUtah,
+	  shape: markerShapeUtah,
+	  zIndex:118
+});
+
+//GrandCanyon ------------
+
+var markerPositionGrandCanyon = new google.maps.LatLng(36.054445, -112.140111);
+
+var markerIconGrandCanyon = {
+  url: 'icons/icon_canyon.png',
+  size: new google.maps.Size(100, 100),
+  origin: new google.maps.Point(0, 0),
+  anchor: new google.maps.Point(44, 100),
+};
+
+var markerShapeGrandCanyon = {
+      coord: [18,8,208,28,200,113,162,110,190,145,128,109,6,93],
+      type: 'poly'
+};
+
+markerGrandCanyon = new google.maps.Marker({
+	  position: markerPositionGrandCanyon,
+      map: festivalMap,
+      title: 'Grand Canyon',
+	  icon: markerIconGrandCanyon,
+	  shape: markerShapeGrandCanyon,
+	  zIndex:116
+});
+
+//LasVegas ------------
+
+var markerPositionLasVegas = new google.maps.LatLng(36.255123, -115.238349);
+
+var markerIconLasVegas = {
+  url: 'icons/icon_vegas.png',
+  size: new google.maps.Size(100, 100),
+  origin: new google.maps.Point(0, 0),
+  anchor: new google.maps.Point(44, 100),
+};
+
+var markerShapeLasVegas = {
+      coord: [18,8,208,28,200,113,162,110,190,145,128,109,6,93],
+      type: 'poly'
+};
+
+markerLasVegas = new google.maps.Marker({
+	  position: markerPositionLasVegas,
+      map: festivalMap,
+      title: 'Las Vegas',
+	  icon: markerIconLasVegas,
+	  shape: markerShapeLasVegas,
+	  zIndex:114
+});
+
+//LasAngelas ------------
+
+var markerPositionLasAngelas = new google.maps.LatLng(33.986168, -118.473314);
+
+var markerIconLasAngelas = {
+  url: 'icons/icon_la.png',
+  size: new google.maps.Size(100, 100),
+  origin: new google.maps.Point(0, 0),
+  anchor: new google.maps.Point(44, 100),
+};
+
+var markerShapeLasAngelas= {
+      coord: [18,8,208,28,200,113,162,110,190,145,128,109,6,93],
+      type: 'poly'
+};
+
+markerLasAngelas = new google.maps.Marker({
+	  position: markerPositionLasAngelas,
+      map: festivalMap,
+      title: 'Los Angelas',
+	  icon: markerIconLasAngelas,
+	  shape: markerShapeLasAngelas,
+	  zIndex:114
+});
+
+//London ------------
+
+var markerPositionLondon = new google.maps.LatLng(51.500728, -0.124626);
+
+var markerIconLondon = {
+  url: 'icons/icon_london.png',
+  size: new google.maps.Size(100, 100),
+  origin: new google.maps.Point(0, 0),
+  anchor: new google.maps.Point(44, 100),
+};
+
+var markerShapeLondon= {
+      coord: [18,8,208,28,200,113,162,110,190,145,128,109,6,93],
+      type: 'poly'
+};
+
+markerLondon = new google.maps.Marker({
+	  position: markerPositionLondon,
+      map: festivalMap,
+      title: 'London',
+	  icon: markerIconLondon,
+	  shape: markerShapeLondon,
+	  zIndex:105
+});
+
+//Pitlochry ------------
+
+var markerPositionPitlochry  = new google.maps.LatLng(56.704361, -3.729711);
+
+var markerIconPitlochry  = {
+  url: 'icons/icon_pitlochry.png',
+  size: new google.maps.Size(100, 100),
+  origin: new google.maps.Point(0, 0),
+  anchor: new google.maps.Point(44, 100),
+};
+
+var markerShapePitlochry = {
+      coord: [18,8,208,28,200,113,162,110,190,145,128,109,6,93],
+      type: 'poly'
+};
+
+markerPitlochry  = new google.maps.Marker({
+	  position: markerPositionPitlochry ,
+      map: festivalMap,
+      title: 'Pitlochry ',
+	  icon: markerIconPitlochry ,
+	  shape: markerShapePitlochry ,
+	  zIndex:100
+});
+
+//Edinburgh ------------
+
+var markerPositionEdinburgh  = new google.maps.LatLng(55.953252, -3.188267);
+
+var markerIconEdinburgh  = {
+  url: 'icons/icon_edinburgh.png',
+  size: new google.maps.Size(100, 100),
+  origin: new google.maps.Point(0, 0),
+  anchor: new google.maps.Point(44, 100),
+};
+
+var markerShapeEdinburgh = {
+      coord: [18,8,208,28,200,113,162,110,190,145,128,109,6,93],
+      type: 'poly'
+};
+
+markerEdinburgh  = new google.maps.Marker({
+	  position: markerPositionEdinburgh ,
+      map: festivalMap,
+      title: 'Edinburgh',
+	  icon: markerIconEdinburgh ,
+	  shape: markerShapeEdinburgh ,
+	  zIndex:101
+});
+
+//LochNess ------------
+
+var markerPositionLochNess  = new google.maps.LatLng(57.322857, -4.424382);
+
+var markerIconLochNess  = {
+  url: 'icons/icon_lochness.png',
+  size: new google.maps.Size(100, 100),
+  origin: new google.maps.Point(0, 0),
+  anchor: new google.maps.Point(44, 100),
+};
+
+var markerShapeLochNess = {
+      coord: [18,8,208,28,200,113,162,110,190,145,128,109,6,93],
+      type: 'poly'
+};
+
+markerLochNess  = new google.maps.Marker({
+	  position: markerPositionLochNess ,
+      map: festivalMap,
+      title: 'Loch Ness',
+	  icon: markerIconLochNess ,
+	  shape: markerShapeLochNess ,
+	  zIndex:98
+});
+
+//Skye ------------
+
+var markerPositionSkye  = new google.maps.LatLng(57.535926, -6.226273);
+
+var markerIconSkye  = {
+  url: 'icons/icon_skye.png',
+  size: new google.maps.Size(100, 100),
+  origin: new google.maps.Point(0, 0),
+  anchor: new google.maps.Point(44, 100),
+};
+
+var markerShapeSkye = {
+      coord: [18,8,208,28,200,113,162,110,190,145,128,109,6,93],
+      type: 'poly'
+};
+
+markerSkye  = new google.maps.Marker({
+	  position: markerPositionSkye ,
+      map: festivalMap,
+      title: 'Isle of Skye',
+	  icon: markerIconSkye ,
+	  shape: markerShapeSkye ,
+	  zIndex:98
+});
+
+//Liverpool ------------
+
+var markerPositionLiverpool  = new google.maps.LatLng(53.408371, -2.991573);
+
+var markerIconLiverpool  = {
+  url: 'icons/icon_liverpool.png',
+  size: new google.maps.Size(100, 100),
+  origin: new google.maps.Point(0, 0),
+  anchor: new google.maps.Point(44, 100),
+};
+
+var markerShapeLiverpool = {
+      coord: [18,8,208,28,200,113,162,110,190,145,128,109,6,93],
+      type: 'poly'
+};
+
+markerLiverpool  = new google.maps.Marker({
+	  position: markerPositionLiverpool ,
+      map: festivalMap,
+      title: 'Liverpool',
+	  icon: markerIconLiverpool ,
+	  shape: markerShapeLiverpool ,
+	  zIndex:102
+});
+
+//Wales ------------
+
+var markerPositionWales   = new google.maps.LatLng(52.130661, -3.783712);
+
+var markerIconWales   = {
+  url: 'icons/icon_wales.png',
+  size: new google.maps.Size(100, 100),
+  origin: new google.maps.Point(0, 0),
+  anchor: new google.maps.Point(44, 100),
+};
+
+var markerShapeWales  = {
+      coord: [18,8,208,28,200,113,162,110,190,145,128,109,6,93],
+      type: 'poly'
+};
+
+markerWales   = new google.maps.Marker({
+	  position: markerPositionWales  ,
+      map: festivalMap,
+      title: 'Wales ',
+	  icon: markerIconWales  ,
+	  shape: markerShapeWales  ,
+	  zIndex:103
+});
+
+//Stonehenge ------------
+
+var markerPositionStonehenge   = new google.maps.LatLng(51.178882, -1.826215);
+
+var markerIconStonehenge  = {
+  url: 'icons/icon_stonehenge.png',
+  size: new google.maps.Size(100, 100),
+  origin: new google.maps.Point(0, 0),
+  anchor: new google.maps.Point(44, 100),
+};
+
+var markerShapeStonehenge  = {
+      coord: [18,8,208,28,200,113,162,110,190,145,128,109,6,93],
+      type: 'poly'
+};
+
+markerStonehenge   = new google.maps.Marker({
+	  position: markerPositionStonehenge  ,
+      map: festivalMap,
+      title: 'Stonehenge ',
+	  icon: markerIconStonehenge  ,
+	  shape: markerShapeStonehenge  ,
+	  zIndex:104
+});
+
+//Methven - NEW ZEALAND ------------
+
+var markerPositionMethven = new google.maps.LatLng(-43.633719, 171.646952);
+
+var markerIconMethven = {
+  url: 'icons/icon_Methven.png',
+  size: new google.maps.Size(100, 100),
+  origin: new google.maps.Point(0, 0),
+  anchor: new google.maps.Point(44, 100),
+};
+
+var markerShapeMethven= {
+      coord: [18,8,208,28,200,113,162,110,190,145,128,109,6,93],
+      type: 'poly'
+};
+
+markerMethven = new google.maps.Marker({
+	  position: markerPositionMethven,
+      map: festivalMap,
+      title: 'Methven',
+	  icon: markerIconMethven,
+	  shape: markerShapeMethven,
+	  zIndex:103
+});
+
+//LakeTekapo ------------
+
+var markerPositionLakeTekapo = new google.maps.LatLng(-44.004674, 170.477121);
+
+var markerIconLakeTekapo = {
+  url: 'icons/icon_tekapo.png',
+  size: new google.maps.Size(100, 100),
+  origin: new google.maps.Point(0, 0),
+  anchor: new google.maps.Point(44, 100),
+};
+
+var markerShapeLakeTekapo= {
+      coord: [18,8,208,28,200,113,162,110,190,145,128,109,6,93],
+      type: 'poly'
+};
+
+markerLakeTekapo = new google.maps.Marker({
+	  position: markerPositionLakeTekapo,
+      map: festivalMap,
+      title: 'Lake Tekapo',
+	  icon: markerIconLakeTekapo,
+	  shape: markerShapeLakeTekapo,
+	  zIndex:103
+});
+
+
+
+
+
+
+}
+
+
+//Function that zooms the map in (if has not been zoomed already) when a map marker is clicked.
+function setZoomWhenMarkerClicked(){
+var currentZoom = festivalMap.getZoom();
+	if (currentZoom < 7){
+			festivalMap.setZoom(7);
+	}
+}
+
+//Function that resets the z-indexes back to their orignal values.
+function resetZindexes (){
+	markerRockness.setZIndex(100);
+	markerTPark.setZIndex(101);
+	markerGlasgowbury.setZIndex(102);
+	markerTafton.setZIndex(103);	
+	markerGarden.setZIndex(104);
+	markerReading.setZIndex(106);
+	markerCamp.setZIndex(107);
+	markerIsleOfWight.setZIndex(108);
+}
+
+//Function that creates the control panel area, ie. the map title and the 2 buttons just beneath it.
+function createControlPanel (controlPanelDiv){
+ controlPanelDiv.style.padding = '0px';
+ controlUI = document.createElement('div');
+ controlUI.style.border='0px solid white';
+ controlUI.style.margin='10px';
+ controlUI.style.paddingTop='11px';
+ controlUI.style.paddingBottom='5px';
+ controlUI.style.paddingLeft='0px';
+ controlUI.style.paddingRight='0px';
+ controlUI.style.width='245px';
+ controlUI.style.height='419px';
+ controlPanelDiv.appendChild(controlUI);
+ 
+ //Map title
+ titleBar = document.createElement('div');
+ titleBar.style.height='300px';
+ titleBar.style.marginTop='0px';
+ titleBar.style.marginBottom='0px';
+ titleBar.style.marginLeft='0px';
+ titleBar.style.marginRight='0px';
+ titleBar.style.paddingTop='6px';
+ titleBar.style.paddingBottom='2px';
+ titleBar.style.paddingLeft='0px';
+ titleBar.style.paddingRight='0px';
+ titleBar.style.cssFloat='left';
+ titleBar.innerHTML = '<div align="center"><img src="icons/map_title.png" height="300" border="0"/></div>';
+ controlUI.appendChild(titleBar);
+ 
+
+ 
+}
+
+
+</script>
+
+</head>
+<body>  
+     <!--Create the div to hold the map.-->
+    <div id="festival-map"></div>   
+</body>
+</html>

@@ -1,0 +1,83 @@
+body {
+  overflow-x: hidden;
+}
+
+main {
+  @media (max-width: $screen-sm) {
+    section {
+      padding: 10px;
+    }
+  }
+}
+
+.container-fluid {
+ width: 90%;
+}
+
+@mixin background($bg-color, $text-color) {
+  background-color: $bg-color;
+  color: $text-color;
+  h1, h2, h3, h4, h5, p, a, em, li {
+    color: $text-color;
+  }
+}
+
+@mixin padding($top, $bottom) {
+  padding-top: $top;
+  padding-bottom: $bottom;
+  @media (max-width: $container-md) {
+    padding-top: $top / 2;
+    padding-bottom: $bottom / 2;
+  }
+}
+
+
+.primary {
+  @include background($brand-secondary, $gray-light);
+}
+
+.gray-light {
+  @include background($gray-light, $brand-primary);
+}
+
+.gray-dark {
+  @include background($gray-dark, $gray-light);
+}
+
+.gray {
+  @include background(lighten($brand-primary, 10%), $gray-light);
+}
+
+.black {
+  @include background(#222222, $gray-light);
+}
+
+.white {
+  @include background(#ffffff, $gray-dark);
+}
+
+
+.padding-sm {
+  @include padding(10px, 10px);
+}
+.padding-md {
+  @include padding(50px, 50px);
+}
+.padding-lg {
+  @include padding(100px, 100px);
+}
+
+.center {
+  position: relative;
+  -ms-transform: translate(0px, -50%);
+  transform: translate(0px, -50%);
+  top: 50%;
+  img {
+    margin:0 auto;
+    display: block;
+  }
+  @media (max-width: $screen-md) {
+    transform: translate(0px, 0px);
+    top: 0;
+  }
+}

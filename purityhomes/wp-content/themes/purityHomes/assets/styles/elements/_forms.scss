@@ -1,0 +1,148 @@
+
+@mixin input($bg-color, $color, $border, $border-radius, $height) {
+  outline: none!important;
+  background-color: $bg-color;
+  border: $border;
+  border-radius: $border-radius;
+  font-size: 12px;
+  width: 100%;
+  transition: all 1s ease;
+  height: $height;
+  color: $color;
+  box-shadow: rgba(0,0,0,0.1) 0 1px 6px, rgba(0,0,0,0.1) 0 1px 4px;
+  &:focus {
+    outline: none!important;
+    background-color: darken($bg-color, 10%);
+    border: $border;
+    color: $color;
+  }
+}
+
+.searchform {
+  padding:20px 0;
+  input[type='search'] {
+    @include input(white, $brand-secondary, 1px solid transparent, 0, 30px);
+  }
+  .search-submit {
+    position: absolute;
+    padding: 7.5px 12px;
+    font-size: 14px;
+    top: 20px;
+    line-height: 1;;
+    right: 15px;
+    color: $brand-secondary;
+    background-color: white;
+    border: 0;
+    border-left: 1px solid $brand-secondary;
+  }
+}
+
+.sml_subscribe {
+  padding: 40px 0 0 0;
+  .sml_thankyou {
+    ~ p {
+      display: none;
+    }
+  }
+  label, .sml_name {
+    display: none;
+  }
+  .sml_submit, .sml_email {
+    display: inline-block;
+    width: 30%;
+  }
+  .sml_email {
+    width: 70%;
+  }
+  input[type=text] {
+    @include input($gray-light, $gray-dark, 0px solid transparent, 0, 40px);
+  }
+  input[type=submit] {
+    @include input($gray-dark, white, 0px solid transparent, 0, 40px);
+    text-transform: uppercase;
+  }
+}
+
+.wpcf7-form {
+  &.sent {
+    p {
+      opacity: 0.5;
+      pointer-events: none;
+      @include transition(height, .2s, ease);
+    }
+  }
+  .wpcf7-list-item {
+    display: block;
+    width: 300px;
+    input[type=radio] {
+      float: right;
+    }
+  }
+  .wpcf7-response-output {
+    border: none;
+  }
+  .wpcf7-mail-sent-ok {
+    color: $success;
+  }
+  .wpcf7-validation-errors, .wpcf7-not-valid-tip {
+    color: $error;
+  }
+  input[type=text], input[type=email], input[type=number], input[type=tel], select {
+    @include input(white, $gray-dark, 0px solid transparent, 0, 40px);
+  }
+  textarea[name=address] {
+    opacity: 0.2;
+    pointer-events: none;
+  }
+  textarea {
+    @include input(white, $gray-dark, 0px solid transparent, 0, 80px);
+  }
+  input[type=submit] {
+    @include input($gray-dark, white, 0px solid transparent, 0, 40px);
+    text-transform: uppercase;
+  }
+
+  input[type=radio] {
+    position: relative;
+    margin: 0 1rem 0 0 ;
+    cursor: pointer;
+
+    &:before {
+      @include transition(transform, .4s, cubic-bezier(.45,1.8,.5,.75));
+      @include transform(scale(0,0));
+      content: "";
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      z-index: 1;
+      width: 9px;
+      height: 9px;
+      background: $brand-secondary;
+      border-radius: 50%;
+    }
+
+    &:checked {
+      &:before {
+        @include transform(scale(1,1));
+      }
+    }
+
+    &:after {
+      content: "";
+      position: absolute;
+      top: -1px;
+      left: -1px;
+      width: 15px;
+      height: 15px;
+      background: #fff;
+      border: 2px solid $brand-secondary;
+      border-radius: 50%;
+    }
+  }
+}
+
+div.wpcf7 .ajax-loader {
+  margin: 10px auto;
+  text-align: center;
+  display: block;
+}

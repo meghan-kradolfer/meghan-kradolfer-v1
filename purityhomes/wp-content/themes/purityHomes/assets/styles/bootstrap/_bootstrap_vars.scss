@@ -1,0 +1,58 @@
+// Colours
+$brand-primary: #4D5053;
+$brand-secondary: #75B254;
+$gray-dark: #333333;
+$gray: #7F8081;
+$gray-light: #F6F6F6;
+$white: #ffffff;
+$error: $brand-primary;
+$success: #819E5C;
+$error: #ae0000;
+$asparagus: #819E5C;
+
+// Scaffolding
+$body-bg: $gray-light;
+$text-color: $brand-primary;
+
+// Typography
+$font-size-base: 14px;
+$font-family-sans-serif: "Open Sans", Arial, sans-serif;
+$headings-font-weight: bold;
+$font-size-h1: 32px;
+$font-size-h2: 28px;
+$font-size-h3: 25px;
+
+// Navbar
+$navbar-margin-bottom: 0;
+$navbar-border-radius: 0;
+
+
+// Buttons
+$btn-default-color: $brand-secondary;
+$btn-default-border: $brand-secondary;
+$btn-primary-color: $white;
+$btn-primary-bg: $brand-primary;
+$btn-primary-border:$brand-primary;
+$btn-info-color: $gray-dark;
+$btn-info-bg: $gray-light;
+
+// Grid
+$grid-float-breakpoint: 1000px;
+$grid-gutter-width:         50px;
+$container-desktop:            (940px + $grid-gutter-width) !default;
+$container-md:                 $container-desktop !default;
+$container-lg: 1200px;
+
+// Modals
+$modal-inner-padding: 30px;
+$modal-content-bg: $gray-light;
+$modal-content-border-color: $gray-light;
+$modal-backdrop-bg: $brand-primary;
+
+// Panels
+$panel-bg: $gray-light;
+$panel-border-radius: 5px;
+$panel-inner-border: transparent;
+$panel-default-border: transparent;
+$panel-default-heading-bg: #fff;
+$panel-footer-bg: transparent;
